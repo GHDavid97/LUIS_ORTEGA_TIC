@@ -106,7 +106,7 @@ while 1:
     print(msg)
     print("velocidad :",velocidad, " cm/s")
     registrar(namefile,sensor.distance)
-    if velocidad<=5 and sensor_distance<=hf*1.1:
+    if velocidad<=5 and sensor.distance<=hf*1.1:
         break
 
 # DESARMAR 
