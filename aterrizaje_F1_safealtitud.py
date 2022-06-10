@@ -37,6 +37,7 @@ def requerir_mensaje(mensaje,intervalo):
     return
 
 def registrar(altitud): #Registramos nuevas filas al archivo csv del data frame
+    global i
     msg0=the_connection.recv_match(type="LOCAL_POSITION_NED",blocking=True)
     msg=the_connection.messages['LOCAL_POSITION_NED']
     msg0=the_connection.recv_match(type="ATTITUDE",blocking=True)
@@ -103,11 +104,11 @@ while 1:
 		if altitud>3:
 			the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(10,the_connection.target_system, the_connection.target_component,
                                                                 mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED,int(0b110111000111),0,0,0,0,0,1,0,0,0,0,0)) #USANDO VELOCIDAD
-			registrar(namefile,altitud)
+			registrar(altitud)
 		else:
 			the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(10,the_connection.target_system, the_connection.target_component,
 	                                                              mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED,int(0b110111000000),0,0,0.1,0,0,0.1,0,0,0,0,0)) #USANDO POSICION + VELOCIDAD
-			registrar(namefile,altitud)
+			registrar(altitud)
 	else:
 		break	
 
