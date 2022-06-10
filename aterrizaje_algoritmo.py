@@ -246,12 +246,7 @@ for frame0 in camera.capture_continuous(rawCapture, format="bgr", use_video_port
             registrar(namefile,sensor.distance)
         else:
             print("QR desconocido")
-            test=test_zona(1) #se especifica el lado del cuadrado que se va a testear
-            if test==True:
-                break
-            else:
-                mover_verificar("x",2)
-                tracker_init=False
+            tracker_init=False
     except:
         print("SIN HELIPUERTO")
         test=test_zona(1)
@@ -280,7 +275,6 @@ for frame0 in camera.capture_continuous(rawCapture, format="bgr", use_video_port
                 center=True
                 tracker_init=False
                 cap.release()
-                registrar()
                 break
             the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(10, the_connection.target_system,
                                     the_connection.target_component, mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED, int(0b110111111000), ry/400, rx/400, 0, 0, 0, 0, 0, 0, 0, 0, 0)) 
