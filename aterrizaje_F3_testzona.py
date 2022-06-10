@@ -11,7 +11,6 @@ import busio
 
 ## ETAPA DEL ATERRIZAJE GUIADO: TEST_ZONA
 def mover_verificar(letra,d):
-    global namefile
     if letra=="x":
         the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(10, the_connection.target_system,
                         the_connection.target_component, mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED, int(0b110111111000), d, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
@@ -29,7 +28,7 @@ def mover_verificar(letra,d):
         a=msg.y
         while 1:
             msg=the_connection.recv_match(type="LOCAL_POSITION_NED",blocking=True)
-            registrar(namefile)
+            registrar()
             if msg.y<a+d+0.1 and msg.y>a+d-0.1:
                 return
 
@@ -74,7 +73,7 @@ def requerir_mensaje(mensaje,intervalo):
 	return
 
 def registrar(): #Registramos nuevas filas al archivo csv del data frame
-    global namefile
+    global i
     msg0=the_connection.recv_match(type="LOCAL_POSITION_NED",blocking=True)
     msg=the_connection.messages['LOCAL_POSITION_NED']
     msg0=the_connection.recv_match(type="ATTITUDE",blocking=True)

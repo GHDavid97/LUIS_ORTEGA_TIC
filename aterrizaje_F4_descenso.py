@@ -18,6 +18,7 @@ def requerir_mensaje(mensaje,intervalo):
 	return
 
 def registrar(namefile,altitud): #Registramos nuevas filas al archivo csv del data frame
+    global i
     msg0=the_connection.recv_match(type="LOCAL_POSITION_NED",blocking=True)
     msg=the_connection.messages['LOCAL_POSITION_NED']
     msg0=the_connection.recv_match(type="ATTITUDE",blocking=True)

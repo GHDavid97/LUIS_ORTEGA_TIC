@@ -49,7 +49,7 @@ def aterrizar(velocidad_inicial):## falta adecuar al sensor
         except:
             velocidad=20
         the_connection.mav.param_set_send(the_connection.target_system,the_connection.target_component,b'LAND_SPEED',velocidad,mavutil.mavlink.MAV_PARAM_TYPE_UINT8)
-        registrar()
+        registrar(namefile,sensor.distance)
         print("velocidad :", velocidad, " cm/s")
         if velocidad==0 or h<=hf*1.1:
             break
@@ -63,7 +63,7 @@ def mover_verificar(letra,d):
         a=msg.x 
         while 1:
             msg=the_connection.recv_match(type="LOCAL_POSITION_NED",blocking=True)
-            registrar()
+            registrar(namefile,sensor.distance)
             if msg.x<a+d+0.1 and msg.x>a+d-0.1:
                 return
     if letra=="y":
@@ -73,13 +73,13 @@ def mover_verificar(letra,d):
         a=msg.y
         while 1:
             msg=the_connection.recv_match(type="LOCAL_POSITION_NED",blocking=True)
-            registrar()
+            registrar(namefile,sensor.distance)
             if msg.y<a+d+0.1 and msg.y>a+d-0.1:
                 return 
 
 def distancia(anterior):
 	try:
-		distancia=sensor.distance*0.01
+		distancia=sensor.distance*0.01 #cambiamos a metros
 		return distancia
 	except:
 		#ERROR EN LA MEDIDA
@@ -137,24 +137,23 @@ def safe_altitud(alt):
             if altitud>alt+1:
                 the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(10,the_connection.target_system, the_connection.target_component,
 	                                                            mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED,int(0b110111000111),0,0,0,0,0,1,0,0,0,0,0)) #USANDO VELOCIDAD
-                registrar()
+                registrar(namefile,sensor.distance)
             else:
                 the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(10,the_connection.target_system, the_connection.target_component,
                                                                mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED,int(0b110111000000),0,0,0.1,0,0,0.1,0,0,0,0,0)) #USANDO POSICION + VELOCIDAD
-                registrar()
+                registrar(namefile,sensor.distance)
         else:
             break
     return 	
 
-def registrar(): #Registramos nuevas filas al archivo csv del data frame
-    global sensor
-    global namefile
+def registrar(namefile,altitud): #Registramos nuevas filas al archivo csv del data frame
+    global i
     msg0=the_connection.recv_match(type="LOCAL_POSITION_NED",blocking=True)
     msg=the_connection.messages['LOCAL_POSITION_NED']
     msg0=the_connection.recv_match(type="ATTITUDE",blocking=True)
     yaw=msg0.yaw
     i+=1
-    DATOS=[i,msg.z,sensor.distance,msg.x,msg.y,msg.vx,msg.vy,msg.vz,yaw]
+    DATOS=[i,msg.z,altitud,msg.x,msg.y,msg.vx,msg.vy,msg.vz,yaw]
     with open(namefile,"a",newline="") as f:
         wo=writer(f)
         wo.writerow(DATOS)
@@ -244,7 +243,7 @@ for frame0 in camera.capture_continuous(rawCapture, format="bgr", use_video_port
             BB=(x,y,w,h)
             tracker.init(frame,BB)
             tracker_init=True
-            registrar()
+            registrar(namefile,sensor.distance)
         else:
             print("QR desconocido")
             test=test_zona(1) #se especifica el lado del cuadrado que se va a testear
@@ -286,7 +285,10 @@ for frame0 in camera.capture_continuous(rawCapture, format="bgr", use_video_port
             the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(10, the_connection.target_system,
                                     the_connection.target_component, mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED, int(0b110111111000), ry/400, rx/400, 0, 0, 0, 0, 0, 0, 0, 0, 0)) 
             print("rx: ",rx,"ry: ",ry)
-            registrar()               
+            registrar(namefile,sensor.distance)               
+        else:
+            print("SE PERDIO EL QR")
+            tracker_init=False
             
     cv2.imshow("image ",frame)
     rawCapture.truncate(0)
