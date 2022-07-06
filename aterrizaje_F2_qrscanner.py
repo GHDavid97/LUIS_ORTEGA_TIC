@@ -112,7 +112,6 @@ for frame0 in camera.capture_continuous(rawCapture, format="bgr", use_video_port
             registrar(namefile,"HELIPAD")
         else:
             print("QR desconocido")
-            registrar(namefile,"desconocido")
     except:
         print("SIN HELIPUERTO")
         registrar(namefile,"no existe")
@@ -139,6 +138,7 @@ for frame0 in camera.capture_continuous(rawCapture, format="bgr", use_video_port
                 # cap.release()
                 cv2.destroyAllWindows()
                 registrar(namefile,"complete!")
+                print("COMPPLETE!")
                 break
             the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(10, the_connection.target_system,
                                     the_connection.target_component, mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED, int(0b110111111000), ry/200, rx/200, 0, 0, 0, 0, 0, 0, 0, 0, 0)) 
