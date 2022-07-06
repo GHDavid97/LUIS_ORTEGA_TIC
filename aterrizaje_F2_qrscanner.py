@@ -144,6 +144,9 @@ for frame0 in camera.capture_continuous(rawCapture, format="bgr", use_video_port
                                     the_connection.target_component, mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED, int(0b110111111000), ry/200, rx/200, 0, 0, 0, 0, 0, 0, 0, 0, 0)) 
             print("rx: ",rx,"ry: ",ry)
             registrar(namefile,"tracker")
+        else:
+            print("SE PERDIO EL SEGUIMIENTO")
+            tracker_init=False
 
     cv2.imshow("image ",frame)
     rawCapture.truncate(0)
