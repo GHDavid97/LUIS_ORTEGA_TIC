@@ -51,7 +51,7 @@ def registrar(altitud): #Registramos nuevas filas al archivo csv del data frame
         return
 
 # the_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5762') # STIL LOCAL 
-# the_connection = mavutil.mavlink_connection('tcp:172.31.69.215:5762') # SITL REMOTO 
+# the_connection = mavutil.mavlink_connection('tcp:172.31.69.213:5762') # SITL REMOTO 
 the_connection = mavutil.mavlink_connection('/dev/serial0',baud=57600) # PROTOTIPO
 
 the_connection.wait_heartbeat()
@@ -73,11 +73,15 @@ i=0
 requerir_mensaje(245,1000000)
 requerir_mensaje(32,1000000)
 requerir_mensaje(30,1000000)
+# 
+# while 1:
+#     msg = the_connection.recv_match(type='EXTENDED_SYS_STATE', blocking=True) 
+#     print(msg.landed_state) #landed_state:(0: undefined)(1:landed on ground)(2:MAV is in air)(3:MAV currently taking off)(4:MAV currently landing)
+#     if(msg.landed_state==4):
+#     	break
 
-#SET MODE
-
-mode_id=the_connection.mode_mapping()['GUIDED']
-
+# mode_id=the_connection.mode_mapping()['GUIDED']
+mode_id=4 # GUIDED
 the_connection.mav.command_long_send(the_connection.target_system, the_connection.target_component,
                                      mavutil.mavlink.MAV_CMD_DO_SET_MODE, 0, 0, mode_id, 0, 0, 0, 0, 0)
 the_connection.set_mode(mode_id)
@@ -85,6 +89,10 @@ the_connection.set_mode(mode_id)
 msg = the_connection.recv_match(type='COMMAND_ACK', blocking=True)
 print()
 print(msg)
+
+the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(10, the_connection.target_system,
+                        the_connection.target_component, mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED, int(0b110111111000), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+
 
 # TO SAFE ALTITUD CON SENSOR
 while 1:
@@ -97,11 +105,11 @@ while 1:
 			mover_verificar("x",1) #mover 2 m al frente
 			contador_error=0
 			break
-	if altitud<=2.1:
-        print("ALTITUD SEGURA")
+	if altitud<=3.1:
+		print("ALTITUD SEGURA")
 		break
-	elif altitud>2.1:
-		if altitud>3:
+	elif altitud>3.1:
+		if altitud>4:
 			the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(10,the_connection.target_system, the_connection.target_component,
                                                                 mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED,int(0b110111000111),0,0,0,0,0,1,0,0,0,0,0)) #USANDO VELOCIDAD
 			registrar(altitud)
@@ -114,7 +122,8 @@ while 1:
 
 #SET MODE
 
-mode_id=the_connection.mode_mapping()['LOITER']
+mode_id=the_connection.mode_mapping()['RTL']
+mode_id=6 # RTL
 
 the_connection.mav.command_long_send(the_connection.target_system, the_connection.target_component,
                                      mavutil.mavlink.MAV_CMD_DO_SET_MODE, 0, 0, mode_id, 0, 0, 0, 0, 0)
@@ -123,3 +132,4 @@ the_connection.set_mode(mode_id)
 msg = the_connection.recv_match(type='COMMAND_ACK', blocking=True)
 print()
 print(msg)
+registrar(altitud)

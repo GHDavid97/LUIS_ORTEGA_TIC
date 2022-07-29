@@ -32,7 +32,7 @@ def registrar(namefile,altitud): #Registramos nuevas filas al archivo csv del da
         return
     
 # the_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5762') # STIL LOCAL 
-# the_connection = mavutil.mavlink_connection('tcp:172.31.69.215:5762') # SITL REMOTO 
+#the_connection = mavutil.mavlink_connection('tcp:172.31.69.213:5762') # SITL REMOTO 
 the_connection = mavutil.mavlink_connection('/dev/serial0',baud=57600) # PROTOTIPO
 
 the_connection.wait_heartbeat()
@@ -56,8 +56,8 @@ sensor=adafruit_lidarlite.LIDARLite(i2c)
 
 #SET MODE
 
-mode_id=the_connection.mode_mapping()['GUIDED']
-
+# mode_id=the_connection.mode_mapping()['GUIDED']
+mode_id=4 # GUIDED
 the_connection.mav.command_long_send(the_connection.target_system, the_connection.target_component,
                                      mavutil.mavlink.MAV_CMD_DO_SET_MODE, 0, 0, mode_id, 0, 0, 0, 0, 0)
 the_connection.set_mode(mode_id)
@@ -91,13 +91,15 @@ try:
 	ho=sensor.distance*1.0
 except:
 	ho=200
-hf=10 # altura inicial en cm
+hf=20 # altura inicial en cm
 
 while 1:
     print(sensor.distance, " cm")
     try:
     	velocidad=(50/(ho-hf))*(sensor.distance-hf) #CURVA LINEAL DE VELOCIDAD
     	# velocidad=(50/(ho**2-hf**2))*(sensor_distance**2-hf**2) #CURVA CUADRATICA DE VELOCIDAD
+    	if velocidad <=20:
+            velocidad=20
     except:
     	velocidad=10
     the_connection.mav.param_set_send(the_connection.target_system,the_connection.target_component,b'LAND_SPEED',velocidad,mavutil.mavlink.MAV_PARAM_TYPE_UINT8)
@@ -106,7 +108,7 @@ while 1:
     print(msg)
     print("velocidad :",velocidad, " cm/s")
     registrar(namefile,sensor.distance)
-    if velocidad<=5 and sensor.distance<=hf*1.1:
+    if velocidad<=30 and sensor.distance<=hf*1.1:
         break
 
 # DESARMAR 

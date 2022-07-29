@@ -43,21 +43,10 @@ def registrar(namefile,estado): #Registramos nuevas filas al archivo csv del dat
         return
 
 # the_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5762') # STIL LOCAL 
-# the_connection = mavutil.mavlink_connection('tcp:172.31.69.215:5762') # SITL REMOTO 
+# the_connection = mavutil.mavlink_connection('tcp:172.31.69.224:5762') # SITL REMOTO 
 the_connection = mavutil.mavlink_connection('/dev/serial0',baud=57600) # PROTOTIPO
 
 the_connection.wait_heartbeat()
-
-mode_id=the_connection.mode_mapping()['GUIDED']
-
-the_connection.mav.command_long_send(the_connection.target_system, the_connection.target_component,
-                                     mavutil.mavlink.MAV_CMD_DO_SET_MODE, 0, 0, mode_id, 0, 0, 0, 0, 0)
-the_connection.set_mode(mode_id)
-
-msg = the_connection.recv_match(type='COMMAND_ACK', blocking=True)
-print()
-print(msg)
-
 
 #CSV
 now=datetime.now()
@@ -87,6 +76,22 @@ time.sleep(0.1)
 center=False
 tracker=cv2.TrackerCSRT_create()
 tracker_init=False
+
+
+# mode_id=the_connection.mode_mapping()['GUIDED']
+mode_id=4 #GUIDED
+the_connection.mav.command_long_send(the_connection.target_system, the_connection.target_component,
+                                     mavutil.mavlink.MAV_CMD_DO_SET_MODE, 0, 0, mode_id, 0, 0, 0, 0, 0)
+the_connection.set_mode(mode_id)
+
+msg = the_connection.recv_match(type='COMMAND_ACK', blocking=True)
+print()
+print(msg)
+
+the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(10, the_connection.target_system,
+                        the_connection.target_component, mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED, int(0b110111111000), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+
+
 for frame0 in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
     img=frame0.array
     frame=cv2.undistort(img,mtx,dist)
@@ -123,7 +128,7 @@ for frame0 in camera.capture_continuous(rawCapture, format="bgr", use_video_port
             cx=int(x+w/2)
             cy=int(y+h/2)
             cv2.putText(frame, "Trackerx:"+str(cx-wimg)+",Trackery:"+str(himg-cy),(cx,cy),font,3,(255,0,0),3)
-                       
+            cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),3)           
             rx=cx-wimg
             ry=himg-cy
             Cimg=(wimg,himg)
@@ -138,14 +143,14 @@ for frame0 in camera.capture_continuous(rawCapture, format="bgr", use_video_port
                 # cap.release()
                 cv2.destroyAllWindows()
                 registrar(namefile,"complete!")
-                print("COMPPLETE!")
+                print("COMPLETE!")
                 break
             the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(10, the_connection.target_system,
-                                    the_connection.target_component, mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED, int(0b110111111000), ry/200, rx/200, 0, 0, 0, 0, 0, 0, 0, 0, 0)) 
+                                    the_connection.target_component, mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED, int(0b110111111000), ry/300, rx/300, 0, 0, 0, 0, 0, 0, 0, 0, 0)) 
             print("rx: ",rx,"ry: ",ry)
             registrar(namefile,"tracker")
         else:
-            print("SE PERDIO EL SEGUIMIENTO")
+            print("se perdio")
             tracker_init=False
 
     cv2.imshow("image ",frame)
@@ -157,8 +162,8 @@ cv2.destroyAllWindows()
 
 #SET MODE
 
-mode_id=the_connection.mode_mapping()['LOITER']
-
+# mode_id=the_connection.mode_mapping()['RTL']
+mode_id=6 # RTL
 the_connection.mav.command_long_send(the_connection.target_system, the_connection.target_component,
                                      mavutil.mavlink.MAV_CMD_DO_SET_MODE, 0, 0, mode_id, 0, 0, 0, 0, 0)
 the_connection.set_mode(mode_id)

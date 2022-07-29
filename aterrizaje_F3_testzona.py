@@ -11,6 +11,7 @@ import busio
 
 ## ETAPA DEL ATERRIZAJE GUIADO: TEST_ZONA
 def mover_verificar(letra,d):
+    global puntos
     if letra=="x":
         the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(10, the_connection.target_system,
                         the_connection.target_component, mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED, int(0b110111111000), d, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
@@ -19,6 +20,11 @@ def mover_verificar(letra,d):
         while 1:
             msg=the_connection.recv_match(type="LOCAL_POSITION_NED",blocking=True)
             registrar()
+            try:
+                d=msg.z*1
+            except:
+                d=np.mean(puntos)
+            puntos.append(d)
             if msg.x<a+d+0.1 and msg.x>a+d-0.1:
                 return
     if letra=="y":
@@ -29,6 +35,11 @@ def mover_verificar(letra,d):
         while 1:
             msg=the_connection.recv_match(type="LOCAL_POSITION_NED",blocking=True)
             registrar()
+            try:
+                d=msg.z*1
+            except:
+                d=np.mean(puntos)
+            puntos.append(d)
             if msg.y<a+d+0.1 and msg.y>a+d-0.1:
                 return
 
@@ -41,7 +52,8 @@ def distancia(anterior):
         return anterior 
 
 def test_zona(lado_cuadrado):
-    puntos=[]
+    global puntos
+    puntos.clear()
     mover_verificar("x",lado_cuadrado*0.5)
     puntos.append(distancia(0))  
     mover_verificar("y",lado_cuadrado*0.5)
@@ -60,7 +72,7 @@ def test_zona(lado_cuadrado):
     print(puntos)
     print(desviacion," std")
     puntos.clear()
-    if desviacion<0.1:
+    if desviacion<0.12:
         return True
     else:
         return False
@@ -87,7 +99,7 @@ def registrar(): #Registramos nuevas filas al archivo csv del data frame
         return
     
 # the_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5762') # STIL LOCAL 
-# the_connection = mavutil.mavlink_connection('tcp:172.31.69.215:5762') # SITL REMOTO 
+# the_connection = mavutil.mavlink_connection('tcp:172.31.69.213:5762') # SITL REMOTO 
 the_connection = mavutil.mavlink_connection('/dev/serial0',baud=57600) # PROTOTIPO
 
 the_connection.wait_heartbeat()
@@ -101,7 +113,7 @@ lista=["tiempo","altitud_imu","x","y","vx","vy","vz","yaw"]
 df=pd.DataFrame(columns=lista)
 df.to_csv(namefile, index=False) #index=False para eliminar la columna unnamed:0 que se crea 
 i=0
-
+puntos=[]
 requerir_mensaje(245,100000) # EXTENDED_SYS_STATE cada 1ms
 requerir_mensaje(32,100000) # LOCAL_POSITION_NED cada 1ms
 requerir_mensaje(30,1000000)
@@ -111,7 +123,8 @@ sensor=adafruit_lidarlite.LIDARLite(i2c)
 
 #SET MODE
 
-mode_id=the_connection.mode_mapping()['GUIDED']
+# mode_id=the_connection.mode_mapping()['GUIDED']
+mode_id=4 #GUIDED
 
 the_connection.mav.command_long_send(the_connection.target_system, the_connection.target_component,
                                      mavutil.mavlink.MAV_CMD_DO_SET_MODE, 0, 0, mode_id, 0, 0, 0, 0, 0)
@@ -121,15 +134,18 @@ msg = the_connection.recv_match(type='COMMAND_ACK', blocking=True)
 print()
 print(msg)
 
+the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(10, the_connection.target_system,
+                        the_connection.target_component, mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED, int(0b110111111000), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+
 #TEST
 
-a=test_zona(1)
+a=test_zona(1.5)
 print(a)
 
 #SET MODE
 
-mode_id=the_connection.mode_mapping()['LOITER']
-
+# mode_id=the_connection.mode_mapping()['RTL']
+mode_id=6 # RTL
 the_connection.mav.command_long_send(the_connection.target_system, the_connection.target_component,
                                      mavutil.mavlink.MAV_CMD_DO_SET_MODE, 0, 0, mode_id, 0, 0, 0, 0, 0)
 the_connection.set_mode(mode_id)

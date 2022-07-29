@@ -24,7 +24,7 @@ with open(CAMERA_PARAMETERS_INPUT_FILE) as f:
     mtx_inv=np.linalg.inv(mtx)
     dist=np.array(dist)
     
-def aterrizar(velocidad_inicial):## falta adecuar al sensor
+def aterrizar(velocidad_inicial):
     the_connection.mav.param_set_send(the_connection.target_system,the_connection.target_component,b'LAND_SPEED',velocidad_inicial,mavutil.mavlink.MAV_PARAM_TYPE_UINT8)
     msg = the_connection.recv_match(type='PARAM_VALUE', blocking=True)
     print()
@@ -46,16 +46,19 @@ def aterrizar(velocidad_inicial):## falta adecuar al sensor
         try:
             velocidad=(velocidad_inicial/(ho-hf))*(sensor.distance-hf) #CURVA LINEAL DE VELOCIDAD DE DESCENSO
             h=sensor.distance
+            if velocidad <=20:
+                velocidad=20
         except:
             velocidad=20
         the_connection.mav.param_set_send(the_connection.target_system,the_connection.target_component,b'LAND_SPEED',velocidad,mavutil.mavlink.MAV_PARAM_TYPE_UINT8)
         registrar(namefile,sensor.distance)
         print("velocidad :", velocidad, " cm/s")
-        if velocidad==0 or h<=hf*1.1:
+        if velocidad<=5 or h<=hf*1.1:
             break
     return
 
 def mover_verificar(letra,d):
+    global puntos
     if letra=="x":
         the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(10, the_connection.target_system,
                         the_connection.target_component, mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED, int(0b110111111000), d, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
@@ -64,6 +67,11 @@ def mover_verificar(letra,d):
         while 1:
             msg=the_connection.recv_match(type="LOCAL_POSITION_NED",blocking=True)
             registrar(namefile,sensor.distance)
+            try:
+                d=sensor.distance*1
+            except:
+                d=np.mean(puntos)
+            puntos.append(d)
             if msg.x<a+d+0.1 and msg.x>a+d-0.1:
                 return
     if letra=="y":
@@ -74,6 +82,11 @@ def mover_verificar(letra,d):
         while 1:
             msg=the_connection.recv_match(type="LOCAL_POSITION_NED",blocking=True)
             registrar(namefile,sensor.distance)
+            try:
+                d=sensor.distance*1
+            except:
+                d=np.mean(puntos)
+            puntos.append(d)
             if msg.y<a+d+0.1 and msg.y>a+d-0.1:
                 return 
 
@@ -86,9 +99,9 @@ def distancia(anterior):
 		return anterior	
 
 def test_zona(lado_cuadrado):
+    global puntos
     print("test zona")
-    time.sleep(5)
-    puntos=[]
+    puntos.clear()
     mover_verificar("x",lado_cuadrado*0.5)
     puntos.append(distancia(0))  
     mover_verificar("y",lado_cuadrado*0.5)
@@ -132,16 +145,17 @@ def safe_altitud(alt):
 
         if altitud<=alt+0.1:
             print("ALTITUD SEGURA")
+            registrar(namefile,altitud)
             break
         elif altitud>alt+0.1:
             if altitud>alt+1:
                 the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(10,the_connection.target_system, the_connection.target_component,
 	                                                            mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED,int(0b110111000111),0,0,0,0,0,1,0,0,0,0,0)) #USANDO VELOCIDAD
-                registrar(namefile,sensor.distance)
+                registrar(namefile,altitud)
             else:
                 the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(10,the_connection.target_system, the_connection.target_component,
                                                                mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED,int(0b110111000000),0,0,0.1,0,0,0.1,0,0,0,0,0)) #USANDO POSICION + VELOCIDAD
-                registrar(namefile,sensor.distance)
+                registrar(namefile,altitud)
         else:
             break
     return 	
@@ -161,7 +175,7 @@ def registrar(namefile,altitud): #Registramos nuevas filas al archivo csv del da
         return
 
 # the_connection = mavutil.mavlink_connection('tcp:127.0.0.1:5762') # STIL LOCAL 
-# the_connection = mavutil.mavlink_connection('tcp:172.31.69.215:5762') # SITL REMOTO 
+# the_connection = mavutil.mavlink_connection('tcp:172.31.69.213:5762') # SITL REMOTO 
 the_connection = mavutil.mavlink_connection('/dev/serial0',baud=57600) # PROTOTIPO
 
 the_connection.wait_heartbeat()
@@ -179,7 +193,7 @@ lista=["tiempo","altitud_imu","altitud_lidar","x","y","vx","vy","vz","yaw"]
 df=pd.DataFrame(columns=lista)
 df.to_csv(namefile, index=False) #index=False para eliminar la columna unnamed:0 que se crea 
 i=0
-
+puntos=[]
 requerir_mensaje(245,100000) # EXTENDED_SYS_STATE cada 1ms
 requerir_mensaje(32,100000) # LOCAL_POSITION_NED cada 1ms
 requerir_mensaje(30,1000000)
@@ -192,8 +206,8 @@ while 1:
 
 #SET MODE
 
-mode_id=the_connection.mode_mapping()['GUIDED']
-
+# mode_id=the_connection.mode_mapping()['GUIDED']
+mode_id=4 # GUIDED
 the_connection.mav.command_long_send(the_connection.target_system, the_connection.target_component,
                                      mavutil.mavlink.MAV_CMD_DO_SET_MODE, 0, 0, mode_id, 0, 0, 0, 0, 0)
 the_connection.set_mode(mode_id)
@@ -207,7 +221,7 @@ print(msg)
 the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(10, the_connection.target_system,
                         the_connection.target_component, mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED, int(0b110111111000), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
 
-safe_altitud(2) # argumento: altitud segura en metros
+safe_altitud(3) # argumento: altitud segura en metros
 
 # SCANNEAR QR
 camera = PiCamera()
@@ -246,10 +260,9 @@ for frame0 in camera.capture_continuous(rawCapture, format="bgr", use_video_port
             registrar(namefile,sensor.distance)
         else:
             print("QR desconocido")
-            tracker_init=False
     except:
         print("SIN HELIPUERTO")
-        test=test_zona(1)
+        test=test_zona(1.5)
         if test==True:
             break
         else:
@@ -258,7 +271,7 @@ for frame0 in camera.capture_continuous(rawCapture, format="bgr", use_video_port
     if tracker_init==True:
         track_success,BB=tracker.update(frame)
         if track_success:
-            x,y,w,h=BB[1],BB[1],BB[2],BB[3]
+            x,y,w,h=BB[0],BB[1],BB[2],BB[3]
             cx=int(x+w/2)
             cy=int(y+h/2)
             cv2.putText(frame, "Trackerx:"+str(cx-wimg)+",Trackery:"+str(himg-cy),(cx,cy),font,3,(255,0,0),3)
@@ -279,7 +292,10 @@ for frame0 in camera.capture_continuous(rawCapture, format="bgr", use_video_port
             the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(10, the_connection.target_system,
                                     the_connection.target_component, mavutil.mavlink.MAV_FRAME_BODY_OFFSET_NED, int(0b110111111000), ry/400, rx/400, 0, 0, 0, 0, 0, 0, 0, 0, 0)) 
             print("rx: ",rx,"ry: ",ry)
-            registrar(namefile,sensor.distance)               
+            try:
+                registrar(namefile,sensor.distance)
+            except:
+                registrar(namefile,0)
         else:
             print("SE PERDIO EL QR")
             tracker_init=False
