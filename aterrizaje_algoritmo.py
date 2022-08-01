@@ -48,6 +48,8 @@ def aterrizar(velocidad_inicial):
             h=sensor.distance
             if velocidad <=20:
                 velocidad=20
+            if velocidad >=50:
+                velocidad=50
         except:
             velocidad=20
         the_connection.mav.param_set_send(the_connection.target_system,the_connection.target_component,b'LAND_SPEED',velocidad,mavutil.mavlink.MAV_PARAM_TYPE_UINT8)
