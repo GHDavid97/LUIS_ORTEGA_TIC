@@ -41,7 +41,7 @@ def aterrizar(velocidad_inicial):
         ho=sensor.distance*1.0 # ALTURA REAL EN CM AL MOMENTO DE DESCENDER 
     except:
         ho=200 #ALTURA INICIAL DE PRUEBA EN CM
-    hf=10 #MEDICION PREVIA DE ALTURA EN CM ENTRE EL SENSOR DE DISTANCIA Y EL SUELO 
+    hf=15 #MEDICION PREVIA DE ALTURA EN CM ENTRE EL SENSOR DE DISTANCIA Y EL SUELO 
     while 1:
         try:
             velocidad=(velocidad_inicial/(ho-hf))*(sensor.distance-hf) #CURVA LINEAL DE VELOCIDAD DE DESCENSO
@@ -65,63 +65,66 @@ def mover_verificar(letra,d):
         the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(10, the_connection.target_system,
                         the_connection.target_component, mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED, int(0b110111111000), d, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
         msg=the_connection.recv_match(type="LOCAL_POSITION_NED",blocking=True)
-        a=msg.x 
+        a=msg.x
+        if a+d>=0:
+            high=1.1
+            low=0.9
+        else:
+            high=0.9
+            low=1.1
         while 1:
             msg=the_connection.recv_match(type="LOCAL_POSITION_NED",blocking=True)
+            print(d," d ", a," a ",msg.x," msg.x")
+            if msg.x<(a+d)*high and msg.x>(a+d)*low:
+                print("mov x complete")
+                return
             registrar(namefile,sensor.distance)
             try:
-                d=sensor.distance*1
+                dis=sensor.distance*0.01
             except:
-                d=np.mean(puntos)
-            puntos.append(d)
-            if msg.x<a+d+0.1 and msg.x>a+d-0.1:
-                return
+                dis=np.mean(puntos)
+            puntos.append(dis)
     if letra=="y":
         the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(10, the_connection.target_system,
                         the_connection.target_component, mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED, int(0b110111111000), 0, d, 0, 0, 0, 0, 0, 0, 0, 0, 0))
         msg=the_connection.recv_match(type="LOCAL_POSITION_NED",blocking=True)
         a=msg.y
+        if a+d>=0:
+            high=1.15
+            low=0.85
+        else:
+            high=0.85
+            low=1.15
         while 1:
             msg=the_connection.recv_match(type="LOCAL_POSITION_NED",blocking=True)
+            print(d," d ", a," a ",msg.x," msg.y")
+            if msg.y<a+d+0.1 and msg.y>a+d-0.1:
+                print("mov y complete")
+                return
             registrar(namefile,sensor.distance)
             try:
-                d=sensor.distance*1
+                dis=sensor.distance*0.01
             except:
-                d=np.mean(puntos)
-            puntos.append(d)
-            if msg.y<a+d+0.1 and msg.y>a+d-0.1:
-                return 
-
-def distancia(anterior):
-	try:
-		distancia=sensor.distance*0.01 #cambiamos a metros
-		return distancia
-	except:
-		#ERROR EN LA MEDIDA
-		return anterior	
+                dis=np.mean(puntos)
+            puntos.append(dis)
 
 def test_zona(lado_cuadrado):
     global puntos
     print("test zona")
     puntos.clear()
-    mover_verificar("x",lado_cuadrado*0.5)
-    puntos.append(distancia(0))  
+    mover_verificar("x",lado_cuadrado*0.5) 
     mover_verificar("y",lado_cuadrado*0.5)
-    puntos.append(distancia(puntos[0]))
     mover_verificar("x",-lado_cuadrado)
-    puntos.append(distancia(puntos[1]))
     mover_verificar("y",-lado_cuadrado)
-    puntos.append(distancia(puntos[2]))
     mover_verificar("x",lado_cuadrado)
-    puntos.append(distancia(puntos[3]))
     mover_verificar("y",lado_cuadrado*0.5)
-    puntos.append(distancia(puntos[4]))
     mover_verificar("x",-lado_cuadrado*0.5)
-    puntos.append(distancia(puntos[5]))
     desviacion=np.std(puntos)
-    media=np.mean(puntos)
+    print(puntos)
+    print(len(puntos)," datos")
+    print(desviacion, " std")
     puntos.clear()
-    if desviacion<0.1:
+    if desviacion<0.15:
     	return True
     else:
         return False 
@@ -223,7 +226,7 @@ print(msg)
 the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(10, the_connection.target_system,
                         the_connection.target_component, mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED, int(0b110111111000), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
 
-safe_altitud(3) # argumento: altitud segura en metros
+safe_altitud(4.0) # argumento: altitud segura en metros
 
 # SCANNEAR QR
 camera = PiCamera()
@@ -264,7 +267,7 @@ for frame0 in camera.capture_continuous(rawCapture, format="bgr", use_video_port
             print("QR desconocido")
     except:
         print("SIN HELIPUERTO")
-        test=test_zona(1.5)
+        test=test_zona(2.0)
         if test==True:
             break
         else:
