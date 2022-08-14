@@ -41,7 +41,7 @@ def aterrizar(velocidad_inicial):
         ho=sensor.distance*1.0 # ALTURA REAL EN CM AL MOMENTO DE DESCENDER 
     except:
         ho=200 #ALTURA INICIAL DE PRUEBA EN CM
-    hf=15 #MEDICION PREVIA DE ALTURA EN CM ENTRE EL SENSOR DE DISTANCIA Y EL SUELO 
+    hf=25 #MEDICION PREVIA DE ALTURA EN CM ENTRE EL SENSOR DE DISTANCIA Y EL SUELO 
     while 1:
         try:
             velocidad=(velocidad_inicial/(ho-hf))*(sensor.distance-hf) #CURVA LINEAL DE VELOCIDAD DE DESCENSO
@@ -55,7 +55,7 @@ def aterrizar(velocidad_inicial):
         the_connection.mav.param_set_send(the_connection.target_system,the_connection.target_component,b'LAND_SPEED',velocidad,mavutil.mavlink.MAV_PARAM_TYPE_UINT8)
         registrar(namefile,sensor.distance)
         print("velocidad :", velocidad, " cm/s")
-        if velocidad<=5 or h<=hf*1.1:
+        if velocidad == 20 or h<=hf*1.1:
             break
     return
 
@@ -124,7 +124,7 @@ def test_zona(lado_cuadrado):
     print(len(puntos)," datos")
     print(desviacion, " std")
     puntos.clear()
-    if desviacion<0.15:
+    if desviacion<0.16:
     	return True
     else:
         return False 
@@ -136,7 +136,7 @@ def requerir_mensaje(mensaje,intervalo):
 	print(msg)
 	return
 
-def safe_altitud(alt):
+def safe_altitud(alt): 
     contador_error=0
     while 1:
         try:
@@ -150,17 +150,17 @@ def safe_altitud(alt):
 
         if altitud<=alt+0.1:
             print("ALTITUD SEGURA")
-            registrar(namefile,altitud)
+            registrar(namefile,altitud*100) # SE MULTIPLICA POR 100 PARA CONSERVAR EL REGISTRO EN CM DEL SENSOR EN OTROS PROCESOS
             break
         elif altitud>alt+0.1:
             if altitud>alt+1:
                 the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(10,the_connection.target_system, the_connection.target_component,
 	                                                            mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED,int(0b110111000111),0,0,0,0,0,1,0,0,0,0,0)) #USANDO VELOCIDAD
-                registrar(namefile,altitud)
+                registrar(namefile,altitud*100)
             else:
                 the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_message(10,the_connection.target_system, the_connection.target_component,
                                                                mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED,int(0b110111000000),0,0,0.1,0,0,0.1,0,0,0,0,0)) #USANDO POSICION + VELOCIDAD
-                registrar(namefile,altitud)
+                registrar(namefile,altitud*100)
         else:
             break
     return 	
