@@ -64,21 +64,29 @@ requerir_mensaje(30,1000000)
 
 # SCANNEAR QR
 
-# initialize the camera and grab a reference to the raw camera capture
+# inicializar la camara
 camera = PiCamera()
 camera.resolution = (640, 480)
 camera.framerate = 30
 rawCapture = PiRGBArray(camera, size=(640, 480))
 font = cv2.FONT_HERSHEY_PLAIN
-# allow the camera to warmup
-time.sleep(0.1)
+
+time.sleep(0.1) # permitir que la cámara de encienda
 
 center=False
 tracker=cv2.TrackerCSRT_create()
 tracker_init=False
 
+"""
+COMMAND_ACK {command : 511, result : 0}
+{'STABILIZE': 0, 'ACRO': 1, 'ALT_HOLD': 2, 'AUTO': 3, 'GUIDED': 4, 'LOITER': 5,
+'RTL': 6,'CIRCLE': 7, 'POSITION': 8, 'LAND': 9, 'OF_LOITER': 10, 'DRIFT': 11,
+'SPORT': 13, 'FLIP': 14,'AUTOTUNE': 15, 'POSHOLD': 16, 'BRAKE': 17, 'THROW': 18,
+'AVOID_ADSB': 19, 'GUIDED_NOGPS': 20, 'SMART_RTL': 21, 'FLOWHOLD': 22, 'FOLLOW': 23,
+'ZIGZAG': 24, 'SYSTEMID': 25, 'AUTOROTATE': 26, AUTO_RTL': 27}
+"""
 
-# mode_id=the_connection.mode_mapping()['GUIDED']
+# mode_id=the_connection.mode_mapping()['GUIDED'] # RECOMENDADO USAR EL ID Y NO EL NOMBRE
 mode_id=4 #GUIDED
 the_connection.mav.command_long_send(the_connection.target_system, the_connection.target_component,
                                      mavutil.mavlink.MAV_CMD_DO_SET_MODE, 0, 0, mode_id, 0, 0, 0, 0, 0)
@@ -95,23 +103,20 @@ the_connection.mav.send(mavutil.mavlink.MAVLink_set_position_target_local_ned_me
 for frame0 in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
     img=frame0.array
     frame=cv2.undistort(img,mtx,dist)
-    #frame=cv2.resize(frame, (640,480))
     wimg=int(frame.shape[1]*0.5)
     himg=int(frame.shape[0]*0.5)
     decodedObjects = pyzbar.decode(frame)
     for obj in decodedObjects:
-        # print("Data", obj.data)
         cv2.putText(frame, str(obj.data), (50, 50), font, 3,
                     (255, 0, 0), 3)    
     try:
-        # print(decodedObjects[0].rect.left)
         if str(obj.data)=="b'HELIPAD'" and tracker_init==False:
             x,y,w,h=decodedObjects[0].rect.left,decodedObjects[0].rect.top,decodedObjects[0].rect.width,decodedObjects[0].rect.height
             cx=int(x+w/2)
             cy=int(y+h/2)
             cv2.putText(frame,"x:"+str(cx-wimg)+",y:"+str(himg-cy),(cx,cy),font,2,(255,0,0),2)
             cv2.rectangle(frame,(x,y),(x+w,y+h),(0,255,0),3)
-            BB=(x,y,w,h)
+            BB=(x,y,w,h) # El BB es el rectangulo que contiene el código QR con la palabra HELIPAD
             tracker.init(frame,BB)
             tracker_init=True
             registrar(namefile,"HELIPAD")
@@ -162,7 +167,6 @@ cv2.destroyAllWindows()
 
 #SET MODE
 
-# mode_id=the_connection.mode_mapping()['RTL']
 mode_id=6 # RTL
 the_connection.mav.command_long_send(the_connection.target_system, the_connection.target_component,
                                      mavutil.mavlink.MAV_CMD_DO_SET_MODE, 0, 0, mode_id, 0, 0, 0, 0, 0)

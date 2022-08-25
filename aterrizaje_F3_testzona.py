@@ -10,7 +10,7 @@ import board
 import busio
 i=0
 puntos=[]
-## ETAPA DEL ATERRIZAJE GUIADO: TEST_ZONA
+
 def mover_verificar(letra,d):
     global puntos
     if letra=="x":
@@ -28,7 +28,6 @@ def mover_verificar(letra,d):
             msg=the_connection.recv_match(type="LOCAL_POSITION_NED",blocking=True)
             print(d," d ", a," a ",msg.x," msg.x")
             if msg.x<(a+d)*high and msg.x>(a+d)*low:
-            # if msg.x<a+d+0.1 and msg.x>a+d-0.1:
                 print("x complete")
                 return
             registrar()
@@ -133,16 +132,15 @@ namefile="/home/pi/TIC_ORTEGA_LUIS/Datos/DATOS_F3/F3_"+day+".csv"
 lista=["tiempo","altitud_imu","x","y","vx","vy","vz","yaw"]
 df=pd.DataFrame(columns=lista)
 df.to_csv(namefile, index=False) #index=False para eliminar la columna unnamed:0 que se crea 
-requerir_mensaje(245,100000) # EXTENDED_SYS_STATE cada 1ms
-requerir_mensaje(32,100000) # LOCAL_POSITION_NED cada 1ms
-requerir_mensaje(30,1000000)
+requerir_mensaje(245,100000) # EXTENDED_SYS_STATE cada 100ms
+requerir_mensaje(32,100000) # LOCAL_POSITION_NED cada 100ms
+requerir_mensaje(30,100000) # ATTITUDE cada 100ms
 
 i2c=busio.I2C(board.SCL,board.SDA)
 sensor=adafruit_lidarlite.LIDARLite(i2c)
 
 #SET MODE
 
-# mode_id=the_connection.mode_mapping()['GUIDED']
 mode_id=4 #GUIDED
 
 the_connection.mav.command_long_send(the_connection.target_system, the_connection.target_component,
@@ -163,7 +161,6 @@ print(a)
 quit()
 #SET MODE
 
-# mode_id=the_connection.mode_mapping()['RTL']
 mode_id=6 # RTL
 the_connection.mav.command_long_send(the_connection.target_system, the_connection.target_component,
                                      mavutil.mavlink.MAV_CMD_DO_SET_MODE, 0, 0, mode_id, 0, 0, 0, 0, 0)

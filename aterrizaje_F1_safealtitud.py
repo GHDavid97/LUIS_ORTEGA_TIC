@@ -73,14 +73,16 @@ i=0
 requerir_mensaje(245,1000000)
 requerir_mensaje(32,1000000)
 requerir_mensaje(30,1000000)
-# 
-# while 1:
-#     msg = the_connection.recv_match(type='EXTENDED_SYS_STATE', blocking=True) 
-#     print(msg.landed_state) #landed_state:(0: undefined)(1:landed on ground)(2:MAV is in air)(3:MAV currently taking off)(4:MAV currently landing)
-#     if(msg.landed_state==4):
-#     	break
 
-# mode_id=the_connection.mode_mapping()['GUIDED']
+"""
+COMMAND_ACK {command : 511, result : 0}
+{'STABILIZE': 0, 'ACRO': 1, 'ALT_HOLD': 2, 'AUTO': 3, 'GUIDED': 4, 'LOITER': 5,
+'RTL': 6,'CIRCLE': 7, 'POSITION': 8, 'LAND': 9, 'OF_LOITER': 10, 'DRIFT': 11,
+'SPORT': 13, 'FLIP': 14,'AUTOTUNE': 15, 'POSHOLD': 16, 'BRAKE': 17, 'THROW': 18,
+'AVOID_ADSB': 19, 'GUIDED_NOGPS': 20, 'SMART_RTL': 21, 'FLOWHOLD': 22, 'FOLLOW': 23,
+'ZIGZAG': 24, 'SYSTEMID': 25, 'AUTOROTATE': 26, AUTO_RTL': 27}
+"""
+
 mode_id=4 # GUIDED
 the_connection.mav.command_long_send(the_connection.target_system, the_connection.target_component,
                                      mavutil.mavlink.MAV_CMD_DO_SET_MODE, 0, 0, mode_id, 0, 0, 0, 0, 0)

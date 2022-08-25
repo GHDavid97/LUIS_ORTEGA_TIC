@@ -48,7 +48,7 @@ def aterrizar(velocidad_inicial):
             h=sensor.distance
             if velocidad <=20:
                 velocidad=20
-            if velocidad >=50:
+            if velocidad >50:
                 velocidad=50
         except:
             velocidad=20
@@ -199,9 +199,9 @@ df=pd.DataFrame(columns=lista)
 df.to_csv(namefile, index=False) #index=False para eliminar la columna unnamed:0 que se crea 
 i=0
 puntos=[]
-requerir_mensaje(245,100000) # EXTENDED_SYS_STATE cada 1ms
-requerir_mensaje(32,100000) # LOCAL_POSITION_NED cada 1ms
-requerir_mensaje(30,1000000)
+requerir_mensaje(245,100000) # EXTENDED_SYS_STATE cada 100ms
+requerir_mensaje(32,100000) # LOCAL_POSITION_NED cada 100ms
+requerir_mensaje(30,1000000) # ATTITUDE cada 100ms
 
 while 1:
     msg = the_connection.recv_match(type='EXTENDED_SYS_STATE', blocking=True) 
@@ -234,7 +234,7 @@ camera.resolution = (640, 480)
 camera.framerate = 30
 rawCapture = PiRGBArray(camera, size=(640, 480))
 font = cv2.FONT_HERSHEY_PLAIN
-# allow the camera to warmup
+
 time.sleep(0.1)
 
 center=False
